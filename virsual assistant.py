@@ -11,20 +11,21 @@ import time
 import json
 import math
 import psutil
-import serial
 import ctypes
 import qrcode
 import random
 import PyPDF2
 import sqlite3
+import winsound
 from pathlib import Path
 from math import *
 from pyfiglet import figlet_format
 import pyttsx3
 import pyjokes
 import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 import datetime
-import operator
 import winshell
 import pyautogui
 import subprocess
@@ -32,49 +33,43 @@ import webbrowser
 import mediapipe as mp
 import tkinter as tk
 import asyncio
+import statistics
+import sympy as sp
 from bleak import BleakScanner 
-from tkinter import messagebox, scrolledtext , filedialog
-from math import sqrt
-import win32api
-import wavio as wv
+from tkinter import messagebox, scrolledtext , filedialog, ttk
 import numpy as np
 import instaloader
 from turtle import *
 from tkinter import *
 import urllib.request
 from pygame.locals import *
-from time import sleep
-import face_recognition
 from pynput.mouse import Button
-import sounddevice as sd
 from requests import get
 from collections import *
 from datetime import date
-import tkinter.messagebox
 from tkinter.ttk import *
-from scipy.io.wavfile import write
 from ecapture import ecapture as ec
+from pynput.mouse import Button, Controller
+import pyaudio
+import wave
+import threading
 try:
     import requests
     import wikipedia
     import speedtest
     import pywhatkit
-    import wolframalpha
     from pytube import YouTube
     import speech_recognition as sr
     from GoogleNews import GoogleNews
     from urllib.request import urlopen
 except ImportError as e:
-    speak("System Error cannot open the libraries")
+    messagebox.showerror("Error","System Error cannot open the libraries")
 except Exception as e:
-    speak("Cannot connect to wifi network Please connect to wifi First")
+    messagebox.showerror("Error","Cannot connect to wifi network Please connect to wifi First")
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 current_time = datetime.datetime.now()
-athours = 0
-atminutes = 0
-assname = "Friday"
-root_url = "http://192.168.43.211"
+assname = "EVA"
 
 #########################################################database################################################
 # Connect to the database
@@ -183,7 +178,6 @@ else:
 
 # Commit and close the connection
 db.commit()
-db.close()
 #################################################################################################################
 # Atomic weights for all elements in the periodic table
 ATOMIC_WEIGHTS = {
@@ -717,21 +711,68 @@ def signin_signup():
 
     root.mainloop()
 
-    db.close()
 ##################################################################################################
-    speak("please tell me time in hours and minuts")
-    alarm_time = takeCommand()
-    speak("What is the alarm for ?")
-    alarm_label = takeCommand()
+def sos():
+    for _ in range(5):  # Ring SOS sound 5 times
+        winsound.Beep(440, 500)  # Frequency: 440 Hz, Duration: 500 ms
+        time.sleep(0.5)
+
+alarms = []
+def addalarm():
+    speak("Please tell me the time in hours and minutes in 24-hour format, separated by a colon (e.g., 14:30).")
+    alarm_time = takeCommand().strip()
+    speak("What is the alarm for?")
+    alarm_label = takeCommand().strip()
     
+    try:
+        # Validate time format
+        datetime.strptime(alarm_time, "%H:%M")
+        alarms.append({"time": alarm_time, "label": alarm_label})
+        speak(f"Alarm set for {alarm_time} with label '{alarm_label}'.")
+    except ValueError:
+        speak("Invalid time format. Please try again.")
+
 def checkalarm():
-    time_ac = datetime.datetime.now()
-    timenowhours = time_ac.strftime("%H")
-    timenowminutes = time_ac.strftime("%M")
-    if athours == timenowhours and atminutes >= timenowminutes:
-        speak("time to wakeup sir")
-        alarmtimehours = 0
-        alarmtimeminutes = 0
+    now = datetime.datetime.now().strftime("%H:%M")
+    for alarm in alarms:
+        if alarm["time"] == now:
+            speak(f"Alarm! {alarm['label']}")
+            sos()
+            alarms.remove(alarm)
+            break
+
+# GUI for managing alarms
+def gui_alarm():
+    def add_alarm():
+        time = time_entry.get().strip()
+        label = label_entry.get().strip()
+        
+        try:
+            datetime.strptime(time, "%H:%M")
+            alarms.append({"time": time, "label": label})
+            messagebox.showinfo("Success", f"Alarm set for {time} with label '{label}'.")
+        except ValueError:
+            messagebox.showerror("Error", "Invalid time format. Use HH:MM in 24-hour format.")
+    
+    # GUI Setup
+    root = tk.Tk()
+    root.title("Alarm Clock")
+    root.geometry("300x250")
+    
+    tk.Label(root, text="Alarm Time (HH:MM):", font=("Helvetica", 12)).pack(pady=5)
+    time_entry = tk.Entry(root, font=("Helvetica", 12))
+    time_entry.pack(pady=5)
+    
+    tk.Label(root, text="Alarm Label:", font=("Helvetica", 12)).pack(pady=5)
+    label_entry = tk.Entry(root, font=("Helvetica", 12))
+    label_entry.pack(pady=5)
+    
+    tk.Button(root, text="Set Alarm", command=add_alarm, bg="green", fg="white", font=("Helvetica", 12)).pack(pady=10)
+    
+    # Background thread for checking alarms
+    threading.Thread(target=checkalarm, daemon=True).start()
+    
+    root.mainloop()
 #################################################################################################      
 def scan_bluetooth_devices():
     async def async_scan():
@@ -1048,7 +1089,9 @@ def temperature():
         temp = round(weather_data.json()["main"]["temp"])
 
         print(f"The weather in {user_input} is: {weather}")
-        print(f"The temperature in {user_input} is: {temp}ºF and {temp - 18}ºC")
+        speak(f"The weather in {user_input} is: {weather}")
+        print(f"The temperature in {user_input} is: {temp}ºF and {(temp-32) * 5/9}ºC")
+        speak(f"The temperature in {user_input} is: {temp}ºF and {int((temp-32) * 5/9)}ºC")
 
 
 
@@ -1095,168 +1138,439 @@ def wishMe():
     speak("let me introduce my self i am " + assname + "i am here to assist you ")
 
 
-def calculations():
-    r = sr.Recognizer()
-    with sr.Microphone() as source:
-        speak("what do you want me to calculate")
-        print("Listening....")
-        r.adjust_for_ambient_noise(source)
-        audio = r.listen(source)
-    my_string = r.recognize_google(audio)
-    print(my_string)
+class MathCalc:
+    def evaluate_expression(self, expression):
+        try:
+            return sp.sympify(expression).evalf()
+        except Exception as e:
+            return f"Error: {e}"
 
-    def get_operator_fn(op):
-        return {
-            "+": operator.add,
-            "-": operator.sub,
-            "x": operator.mul,
-            "divided": operator.__truediv__,
-        }[op]
+    def add(self, a, b):
+        return a + b
 
-    def eval_binary_expr(op1, oper, op2):
-        op1, op2 = int(op1), int(op2)
-        return get_operator_fn(oper)(op1, op2)
+    def subtract(self, a, b):
+        return a - b
 
-    speak("your result is")
-    print("your result is" + eval_binary_expr(*(my_string.split())))
-    speak(eval_binary_expr(*(my_string.split())))
+    def multiply(self, a, b):
+        return a * b
 
+    def divide(self, a, b):
+        if b != 0:
+            return a / b
+        else:
+            return "Error: Division by zero"
 
+    def modulus(self, a, b):
+        return a % b
 
-def WolfRamAlpha(query):
-    apikey = "#paste your api key"
-    requester = wolframalpha.Client(apikey)
-    requested = requester.query(query)
+    def exponent(self, a, b):
+        return a ** b
 
-    try:
-        answer = next(requested.results).text
-        return answer
-    except:
-        speak("The value is not answerable")
+    def factorial(self, a):
+        if a >= 0:
+            return math.factorial(a)
+        else:
+            return "Error: Negative numbers"
 
+    def gcd(self, a, b):
+        return math.gcd(a, b)
 
-def Calc(query):
-    Term = str(query)
-    Term = Term.replace("jarvis", "")
-    Term = Term.replace("multiply", "*")
-    Term = Term.replace("plus", "+")
-    Term = Term.replace("minus", "-")
-    Term = Term.replace("divide", "/")
+    def lcm(self, a, b):
+        return abs(a * b) // math.gcd(a, b) if a and b else 0
 
-    Final = str(Term)
-    try:
-        result = WolfRamAlpha(Final)
-        print(f"{result}")
-        speak(result)
+    def mean(self, data):
+        return statistics.mean(data)
 
-    except:
-        speak("The value is not answerable")
+    def median(self, data):
+        return statistics.median(data)
 
+    def variance(self, data):
+        return statistics.variance(data)
+
+    def standard_deviation(self, data):
+        return statistics.stdev(data)
+
+    def union(self, set_a, set_b):
+        return set_a.union(set_b)
+
+    def intersection(self, set_a, set_b):
+        return set_a.intersection(set_b)
+
+    def difference(self, set_a, set_b):
+        return set_a.difference(set_b)
+
+    def derivative(self, expr, variable):
+        return sp.diff(expr, variable)
+
+    def integral(self, expr, variable):
+        return sp.integrate(expr, variable)
+
+    def solve_linear(self, equations, variables):
+        return sp.solve(equations, variables)
+
+class MathCalcGUI:
+    def __init__(self, root):
+        self.calc = MathCalc()
+        self.root = root
+        self.root.title("Enhanced Math Calculator")
+        self.root.geometry("700x600")
+        self.root.resizable(False, False)
+        self.create_widgets()
+
+    def create_widgets(self):
+        # Title Label
+        self.title_label = tk.Label(self.root, text="Enhanced Math Calculator", font=("Helvetica", 16, "bold"))
+        self.title_label.pack(pady=10)
+
+        # Number of Variables Selection
+        self.num_vars_label = tk.Label(self.root, text="Enter Number of Variables:", font=("Helvetica", 12))
+        self.num_vars_label.pack(pady=5)
+
+        self.num_vars_spinbox = tk.Spinbox(self.root, from_=1, to=10, font=("Helvetica", 12), width=5)
+        self.num_vars_spinbox.pack(pady=5)
+
+        # Input Label
+        self.input_label = tk.Label(self.root, text="Enter Expression or Data (comma-separated):", font=("Helvetica", 12))
+        self.input_label.pack(pady=5)
+
+        # Input Field
+        self.input_field = tk.Entry(self.root, font=("Helvetica", 12), width=50)
+        self.input_field.pack(pady=10)
+
+        # Operation Selection
+        self.operation_label = tk.Label(self.root, text="Select Operation:", font=("Helvetica", 12))
+        self.operation_label.pack(pady=5)
+
+        self.operation_combobox = ttk.Combobox(self.root, state="readonly", font=("Helvetica", 12), width=30)
+        self.operation_combobox['values'] = [
+            "Evaluate Expression", "Addition", "Subtraction", "Multiplication", "Division",
+            "Modulus", "Exponent", "Factorial", "GCD", "LCM",
+            "Mean", "Median", "Variance", "Standard Deviation",
+            "Union", "Intersection", "Difference",
+            "Derivative", "Integral", "Solve Linear Equations"
+        ]
+        self.operation_combobox.pack(pady=10)
+        self.operation_combobox.current(0)
+
+        # Calculate Button
+        self.calculate_button = tk.Button(self.root, text="Calculate", command=self.calculate, bg="green", fg="white", font=("Helvetica", 12))
+        self.calculate_button.pack(pady=10)
+
+        # Result Display
+        self.result_label = tk.Label(self.root, text="Result:", font=("Helvetica", 12))
+        self.result_label.pack(pady=5)
+
+        self.result_display = tk.Entry(self.root, font=("Helvetica", 12), state="readonly", width=50)
+        self.result_display.pack(pady=10)
+
+    def calculate(self):
+        operation = self.operation_combobox.get()
+        expression = self.input_field.get()
+        num_vars = int(self.num_vars_spinbox.get())
+        try:
+            if operation == "Evaluate Expression":
+                result = self.calc.evaluate_expression(expression)
+
+            elif operation in ["Mean", "Median", "Variance", "Standard Deviation"]:
+                data = list(map(float, expression.split(',')))
+                if len(data) != num_vars:
+                    raise ValueError("Number of variables does not match input data.")
+                if operation == "Mean":
+                    result = self.calc.mean(data)
+                elif operation == "Median":
+                    result = self.calc.median(data)
+                elif operation == "Variance":
+                    result = self.calc.variance(data)
+                elif operation == "Standard Deviation":
+                    result = self.calc.standard_deviation(data)
+
+            elif operation in ["Union", "Intersection", "Difference"]:
+                sets = expression.split(';')
+                if len(sets) != 2:
+                    raise ValueError("Two sets are required for this operation.")
+                set_a = set(map(int, sets[0].split(',')))
+                set_b = set(map(int, sets[1].split(',')))
+                if operation == "Union":
+                    result = self.calc.union(set_a, set_b)
+                elif operation == "Intersection":
+                    result = self.calc.intersection(set_a, set_b)
+                elif operation == "Difference":
+                    result = self.calc.difference(set_a, set_b)
+
+            elif operation in ["Derivative", "Integral"]:
+                expr, variable = expression.split(',')
+                expr = sp.sympify(expr)
+                variable = sp.Symbol(variable)
+                if operation == "Derivative":
+                    result = self.calc.derivative(expr, variable)
+                elif operation == "Integral":
+                    result = self.calc.integral(expr, variable)
+
+            elif operation == "Solve Linear Equations":
+                equations, variables = expression.split(';')
+                equations = [sp.sympify(eq.strip()) for eq in equations.split(',')]
+                variables = [sp.Symbol(var.strip()) for var in variables.split(',')]
+                result = self.calc.solve_linear(equations, variables)
+
+            else:
+                numbers = list(map(float, expression.split(',')))
+                if len(numbers) != num_vars:
+                    raise ValueError("Number of variables does not match input data.")
+                if operation == "Addition":
+                    result = sum(numbers)
+                elif operation == "Subtraction":
+                    result = numbers[0] - sum(numbers[1:])
+                elif operation == "Multiplication":
+                    result = math.prod(numbers)
+                elif operation == "Division":
+                    result = numbers[0]
+                    for num in numbers[1:]:
+                        result /= num
+                elif operation == "Modulus":
+                    result = numbers[0] % numbers[1]
+                elif operation == "Exponent":
+                    result = numbers[0] ** numbers[1]
+                elif operation == "Factorial":
+                    result = self.calc.factorial(int(numbers[0]))
+                elif operation == "GCD":
+                    result = math.gcd(int(numbers[0]), int(numbers[1]))
+                elif operation == "LCM":
+                    result = self.calc.lcm(int(numbers[0]), int(numbers[1]))
+                else:
+                    result = "Invalid Operation"
+
+            self.result_display.config(state="normal")
+            self.result_display.delete(0, tk.END)
+            self.result_display.insert(0, str(result))
+            self.result_display.config(state="readonly")
+
+        except ValueError as ve:
+            messagebox.showerror("Input Error", str(ve))
+        except Exception as e:
+            messagebox.showerror("Error", f"An error occurred: {e}")
+def calculate():
+# Run the Application
+    root = tk.Tk()
+    app = MathCalcGUI(root)
+    root.mainloop()
 
 def mouse():
-    mp_drawing = mp.solutions.drawing_utils
-    mp_hands = mp.solutions.hands
-    click = 0
+    
+    mouse = Controller()
 
-    video = cv2.VideoCapture(0)
+    screen_width, screen_height = pyautogui.size()
 
-    with mp_hands.Hands(
-        min_detection_confidence=0.8, min_tracking_confidence=0.8
-    ) as hands:
-        while video.isOpened():
-            _, frame = video.read()
-            image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    mpHands = mp.solutions.hands
+    hands = mpHands.Hands(
+        static_image_mode=False,
+        model_complexity=1,
+        min_detection_confidence=0.7,
+        min_tracking_confidence=0.7,
+        max_num_hands=1
+    )
 
-            image = cv2.flip(image, 1)
+    def get_angle(a, b, c):
+        radians = np.arctan2(c[1] - b[1], c[0] - b[0]) - np.arctan2(a[1] - b[1], a[0] - b[0])
+        angle = np.abs(np.degrees(radians))
+        return angle
 
-            imageHeight, imageWidth, _ = image.shape
+    def get_distance(landmark_list):
+        if len(landmark_list) < 2:
+            return
+        (x1, y1), (x2, y2) = landmark_list[0], landmark_list[1]
+        L = np.hypot(x2 - x1, y2 - y1)
+        return np.interp(L, [0, 1], [0, 1000])
 
-            results = hands.process(image)
+    def find_finger_tip(processed):
+        if processed.multi_hand_landmarks:
+            hand_landmarks = processed.multi_hand_landmarks[0]  # Assuming only one hand is detected
+            index_finger_tip = hand_landmarks.landmark[mpHands.HandLandmark.INDEX_FINGER_TIP]
+            return index_finger_tip
+        return None, None
 
-            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+    def move_mouse(index_finger_tip):
+        if index_finger_tip is not None:
+            x = int(index_finger_tip.x * screen_width)
+            y = int(index_finger_tip.y / 2 * screen_height)
+            pyautogui.moveTo(x, y)
 
-            if results.multi_hand_landmarks:
-                for num, hand in enumerate(results.multi_hand_landmarks):
-                    mp_drawing.draw_landmarks(
-                        image,
-                        hand,
-                        mp_hands.HAND_CONNECTIONS,
-                        mp_drawing.DrawingSpec(
-                            color=(250, 44, 250), thickness=2, circle_radius=2
-                        ),
-                    )
+    def is_left_click(landmark_list, thumb_index_dist):
+        return (
+                get_angle(landmark_list[5], landmark_list[6], landmark_list[8]) < 50 and
+                get_angle(landmark_list[9], landmark_list[10], landmark_list[12]) > 90 and
+                thumb_index_dist > 50
+        )
 
-            if results.multi_hand_landmarks != None:
-                for handLandmarks in results.multi_hand_landmarks:
-                    for point in mp_hands.HandLandmark:
-                        normalizedLandmark = handLandmarks.landmark[point]
-                        pixelCoordinatesLandmark = (
-                            mp_drawing._normalized_to_pixel_coordinates(
-                                normalizedLandmark.x,
-                                normalizedLandmark.y,
-                                imageWidth,
-                                imageHeight,
-                            )
-                        )
+    def is_right_click(landmark_list, thumb_index_dist):
+        return (
+                get_angle(landmark_list[9], landmark_list[10], landmark_list[12]) < 50 and
+                get_angle(landmark_list[5], landmark_list[6], landmark_list[8]) > 90  and
+                thumb_index_dist > 50
+        )
 
-                        point = str(point)
+    def is_double_click(landmark_list, thumb_index_dist):
+        return (
+                get_angle(landmark_list[5], landmark_list[6], landmark_list[8]) < 50 and
+                get_angle(landmark_list[9], landmark_list[10], landmark_list[12]) < 50 and
+                thumb_index_dist > 50
+        )
 
-                    if point == "HandLandmark.INDEX_FINGER_TIP":
-                        try:
-                            indexfingertip_x = pixelCoordinatesLandmark[0]
-                            indexfingertip_y = pixelCoordinatesLandmark[1]
-                            win32api.SetCursorPos(
-                                (indexfingertip_x * 4, indexfingertip_y * 5)
-                            )
-                        except:
-                            pass
+    def is_screenshot(landmark_list, thumb_index_dist):
+        return (
+                get_angle(landmark_list[5], landmark_list[6], landmark_list[8]) < 50 and
+                get_angle(landmark_list[9], landmark_list[10], landmark_list[12]) < 50 and
+                thumb_index_dist < 50
+        )
 
-                    elif point == "HandLandmark.THUMB_TIP":
-                        try:
-                            thumbfingertip_x = pixelCoordinatesLandmark[0]
-                            thumbfingertip_y = pixelCoordinatesLandmark[1]
-                            # print("thumb",thumbfingertip_x)
+    def detect_gesture(frame, landmark_list, processed):
+        if len(landmark_list) >= 21:
 
-                        except:
-                            pass
-                        try:
-                            # pyautogui.moveTo(indexfingertip_x,indexfingertip_y)
-                            Distance_x = sqrt(
-                                (indexfingertip_x - thumbfingertip_x) ** 2
-                                + (indexfingertip_x - thumbfingertip_x) ** 2
-                            )
-                            Distance_y = sqrt(
-                                (indexfingertip_y - thumbfingertip_y) ** 2
-                                + (indexfingertip_y - thumbfingertip_y) ** 2
-                            )
-                            if Distance_x < 5 or Distance_x < -5:
-                                if Distance_y < 5 or Distance_y < -5:
-                                    click = click + 1
-                                    if click % 5 == 0:
-                                        print("single click")
-                                        pyautogui.click()
+            index_finger_tip = find_finger_tip(processed)
+            thumb_index_dist = get_distance([landmark_list[4], landmark_list[5]])
 
-                        except:
-                            pass
+            if thumb_index_dist < 50 and get_angle(landmark_list[5], landmark_list[6], landmark_list[8]) > 90:
+                move_mouse(index_finger_tip)
+            elif is_left_click(landmark_list,  thumb_index_dist):
+                mouse.press(Button.left)
+                mouse.release(Button.left)
+                cv2.putText(frame, "Left Click", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            elif is_right_click(landmark_list, thumb_index_dist):
+                mouse.press(Button.right)
+                mouse.release(Button.right)
+                cv2.putText(frame, "Right Click", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            elif is_double_click(landmark_list, thumb_index_dist):
+                pyautogui.doubleClick()
+                cv2.putText(frame, "Double Click", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
+            elif is_screenshot(landmark_list,thumb_index_dist ):
+                im1 = pyautogui.screenshot()
+                label = random.randint(1, 1000)
+                im1.save(f'my_screenshot_{label}.png')
+                cv2.putText(frame, "Screenshot Taken", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
 
-            cv2.imshow("Hand Tracking", image)
+    draw = mp.solutions.drawing_utils
+    cap = cv2.VideoCapture(0)
 
-            if cv2.waitKey(10) & 0xFF == ord("q"):
+    try:
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
                 break
+            frame = cv2.flip(frame, 1)
+            frameRGB = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            processed = hands.process(frameRGB)
 
-    video.release()
+            landmark_list = []
+            if processed.multi_hand_landmarks:
+                hand_landmarks = processed.multi_hand_landmarks[0]  # Assuming only one hand is detected
+                draw.draw_landmarks(frame, hand_landmarks, mpHands.HAND_CONNECTIONS)
+                for lm in hand_landmarks.landmark:
+                    landmark_list.append((lm.x, lm.y))
+
+            detect_gesture(frame, landmark_list, processed)
+
+            cv2.imshow('Frame', frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+    finally:
+        cap.release()
+        cv2.destroyAllWindows()
+
 
 
 def soundrecorder():
-    freq = 44100
-    speak("for how much time")
-    duration = int(takeCommand())
-    recording = sd.rec(int(duration * freq), samplerate=freq, channels=2)
-    sd.wait()
-    write("recording0.wav", freq, recording)
-    wv.write("recording1.wav", recording, freq, sampwidth=2)
-    print("recording is done")
-    speak("recording is done")
+    
+    class AudioRecorderApp:
+        def __init__(self, root):
+            self.root = root
+            self.root.title("Audio Recorder")
+            self.root.geometry("400x300")
+            self.root.resizable(False, False)
+
+            # Title Label
+            self.title_label = tk.Label(root, text="Audio Recorder", font=("Helvetica", 16, "bold"))
+            self.title_label.pack(pady=10)
+
+            # File Selection
+            self.file_frame = tk.Frame(root)
+            self.file_frame.pack(pady=10)
+            self.file_label = tk.Label(self.file_frame, text="Output File:", font=("Helvetica", 12))
+            self.file_label.pack(side=tk.LEFT, padx=5)
+            self.file_button = tk.Button(self.file_frame, text="Select File", command=self.select_output_file)
+            self.file_button.pack(side=tk.LEFT)
+
+            # Recording Controls
+            self.controls_frame = tk.Frame(root)
+            self.controls_frame.pack(pady=20)
+            self.record_button = tk.Button(self.controls_frame, text="Start Recording", command=self.start_recording, width=15, bg="green", fg="white")
+            self.record_button.grid(row=0, column=0, padx=10)
+            self.stop_button = tk.Button(self.controls_frame, text="Stop Recording", command=self.stop_recording, width=15, bg="red", fg="white", state=tk.DISABLED)
+            self.stop_button.grid(row=0, column=1, padx=10)
+
+            # Status Label
+            self.status_label = tk.Label(root, text="Status: Ready", font=("Helvetica", 12), fg="blue")
+            self.status_label.pack(pady=10)
+
+            self.output_file = "output.wav"
+            self.is_recording = False
+            self.audio = None
+            self.stream = None
+            self.frames = []
+
+        def select_output_file(self):
+            self.output_file = filedialog.asksaveasfilename(defaultextension=".wav", filetypes=[("WAV files", "*.wav")])
+            if not self.output_file:
+                self.output_file = "output.wav"
+            self.status_label.config(text=f"Output File: {self.output_file}", fg="black")
+
+        def start_recording(self):
+            self.is_recording = True
+            self.record_button.config(state=tk.DISABLED)
+            self.stop_button.config(state=tk.NORMAL)
+            self.frames = []
+            self.status_label.config(text="Status: Recording...", fg="green")
+
+            self.audio = pyaudio.PyAudio()
+            self.stream = self.audio.open(format=pyaudio.paInt16,
+                                        channels=2,
+                                        rate=44100,
+                                        input=True,
+                                        frames_per_buffer=1024)
+
+            threading.Thread(target=self.record_audio_thread, daemon=True).start()
+
+        def stop_recording(self):
+            self.is_recording = False
+            self.record_button.config(state=tk.NORMAL)
+            self.stop_button.config(state=tk.DISABLED)
+            self.status_label.config(text="Status: Saving...", fg="orange")
+
+            if self.stream is not None:
+                self.stream.stop_stream()
+                self.stream.close()
+                self.audio.terminate()
+
+            # Save the audio data to a WAV file
+            with wave.open(self.output_file, "wb") as wf:
+                wf.setnchannels(2)
+                wf.setsampwidth(self.audio.get_sample_size(pyaudio.paInt16))
+                wf.setframerate(44100)
+                wf.writeframes(b"".join(self.frames))
+
+            self.status_label.config(text=f"Status: Saved to {self.output_file}", fg="blue")
+            messagebox.showinfo("Recording Complete", f"Recording finished. File saved as {self.output_file}")
+
+        def record_audio_thread(self):
+            while self.is_recording:
+                data = self.stream.read(1024)
+                self.frames.append(data)
+
+    def launch_app():
+        root = tk.Tk()
+        app = AudioRecorderApp(root)
+        root.mainloop()
+
+    launch_app()
+
 
 
 def sound_controller_up():
@@ -1270,70 +1584,219 @@ def sound_controller_down():
 
 
 def pass_crack():
-    password = pyautogui.password("Enter a password : ")
 
-    chars = "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz0123456789#"
+    class PasswordCheckerApp:
+        def __init__(self, root):
+            self.root = root
+            self.root.title("Password Strength Checker")
+            self.root.geometry("400x300")
+            self.root.resizable(False, False)
 
-    # chars = string.printable
-    chars_list = list(chars)
+            # Title Label
+            self.title_label = tk.Label(root, text="Password Strength Checker", font=("Helvetica", 16, "bold"))
+            self.title_label.pack(pady=10)
 
-    guess_password = ""
+            # Input Frame
+            self.input_frame = tk.Frame(root)
+            self.input_frame.pack(pady=10)
 
-    while guess_password != password:
-        guess_password = random.choices(chars_list, k=len(password))
+            self.password_label = tk.Label(self.input_frame, text="Enter Password:", font=("Helvetica", 12))
+            self.password_label.pack(side=tk.LEFT, padx=5)
 
-        print("===>" + str(guess_password))
+            self.password_entry = tk.Entry(self.input_frame, show="*", width=30)
+            self.password_entry.pack(side=tk.LEFT, padx=5)
 
-        if guess_password == list(password):
-            print("Your password is : " + "".join(guess_password))
-            break
+            # Check Button
+            self.check_button = tk.Button(root, text="Check Strength", command=self.check_strength, bg="blue", fg="white", width=20)
+            self.check_button.pack(pady=10)
+
+            # Result Label
+            self.result_label = tk.Label(root, text="", font=("Helvetica", 12), fg="green")
+            self.result_label.pack(pady=10)
+
+            # Recommendations Frame
+            self.recommendations_label = tk.Label(root, text="", font=("Helvetica", 12), fg="red")
+            self.recommendations_label.pack(pady=10)
+
+        def check_password_strength(self, password):
+            # Initialize the score and recommendations
+            score = 0
+            recommendations = []
+
+            # Define password strength criteria
+            length_criteria = len(password) >= 8
+            digit_criteria = re.search(r"\d", password) is not None
+            uppercase_criteria = re.search(r"[A-Z]", password) is not None
+            lowercase_criteria = re.search(r"[a-z]", password) is not None
+            special_char_criteria = re.search(r"[!@#$%^&*(),.?\":{}|<>]", password) is not None
+
+            # Evaluate criteria and update score
+            if length_criteria:
+                score += 2
+            else:
+                recommendations.append("Make the password at least 8 characters long.")
+
+            if digit_criteria:
+                score += 1
+            else:
+                recommendations.append("Include at least one digit (0-9).")
+
+            if uppercase_criteria:
+                score += 1
+            else:
+                recommendations.append("Include at least one uppercase letter (A-Z).")
+
+            if lowercase_criteria:
+                score += 1
+            else:
+                recommendations.append("Include at least one lowercase letter (a-z).")
+
+            if special_char_criteria:
+                score += 2
+            else:
+                recommendations.append("Include at least one special character (!@#$%^&*(),.?\":{}|<>).")
+
+            return score, recommendations
+
+        def check_strength(self):
+            password = self.password_entry.get()
+            if not password:
+                messagebox.showerror("Error", "Please enter a password.")
+                return
+
+            score, recommendations = self.check_password_strength(password)
+            self.result_label.config(text=f"Password Strength Score: {score}/7", fg="green" if score == 7 else "orange")
+
+            if score == 7:
+                self.recommendations_label.config(text="Your password is very strong!")
+            else:
+                recommendations_text = "\n".join(recommendations)
+                self.recommendations_label.config(text=f"Recommendations:\n{recommendations_text}")
+
+    # Launch the GUI
+    root = tk.Tk()
+    app = PasswordCheckerApp(root)
+    root.mainloop()
+
 
 
 def saved_wifi_passwords():
-    data = (
-        subprocess.check_output(["netsh", "wlan", "show", "profiles"])
-        .decode("utf-8")
-        .split("\n")
-    )
-    profiles = [i.split(":")[1][1:-1] for i in data if "All User Profile" in i]
-    for i in profiles:
-        results = (
-            subprocess.check_output(
-                ["netsh", "wlan", "show", "profile", i, "key=clear"]
-            )
-            .decode("utf-8")
-            .split("\n")
+    
+    class WifiPasswordViewerApp:
+        def __init__(self, root):
+            self.root = root
+            self.root.title("Wi-Fi Password Viewer")
+            self.root.geometry("600x400")
+            self.root.resizable(False, False)
+
+            # Title Label
+            self.title_label = tk.Label(root, text="Wi-Fi Password Viewer", font=("Helvetica", 16, "bold"))
+            self.title_label.pack(pady=10)
+
+            # Treeview for displaying Wi-Fi networks and passwords
+            self.tree = ttk.Treeview(root, columns=("SSID", "Password"), show="headings")
+            self.tree.heading("SSID", text="Wi-Fi Name (SSID)")
+            self.tree.heading("Password", text="Password")
+            self.tree.column("SSID", width=250, anchor=tk.W)
+            self.tree.column("Password", width=250, anchor=tk.W)
+            self.tree.pack(pady=20, fill=tk.BOTH, expand=True)
+
+            # Buttons
+            self.button_frame = tk.Frame(root)
+            self.button_frame.pack(pady=10)
+            self.fetch_button = tk.Button(self.button_frame, text="Fetch Wi-Fi Passwords", command=self.fetch_wifi_passwords, bg="blue", fg="white", width=20)
+            self.fetch_button.pack(side=tk.LEFT, padx=10)
+            self.clear_button = tk.Button(self.button_frame, text="Clear List", command=self.clear_list, bg="red", fg="white", width=20)
+            self.clear_button.pack(side=tk.LEFT, padx=10)
+
+        def fetch_wifi_passwords(self):
+            try:
+                # Run the command to get all Wi-Fi profiles
+                profiles_output = subprocess.check_output("netsh wlan show profiles", shell=True, universal_newlines=True)
+                profiles = [line.split(":")[-1].strip() for line in profiles_output.splitlines() if "All User Profile" in line]
+
+                # Fetch passwords for each profile
+                for profile in profiles:
+                    try:
+                        password_output = subprocess.check_output(f'netsh wlan show profile "{profile}" key=clear', shell=True, universal_newlines=True)
+                        password_lines = [line.split(":")[-1].strip() for line in password_output.splitlines() if "Key Content" in line]
+                        password = password_lines[0] if password_lines else "<No Password>"
+                    except subprocess.CalledProcessError:
+                        password = "<Access Denied>"
+
+                    self.tree.insert("", tk.END, values=(profile, password))
+
+            except Exception as e:
+                messagebox.showerror("Error", f"An error occurred: {e}")
+
+        def clear_list(self):
+            for item in self.tree.get_children():
+                self.tree.delete(item)
+
+    # Launch the GUI
+    root = tk.Tk()
+    app = WifiPasswordViewerApp(root)
+    root.mainloop()
+
+
+
+def run_sfc():
+
+    try:
+        process = subprocess.Popen(
+            ['sfc', '/scannow'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
         )
-        results = [b.split(":")[1][1:-1] for b in results if "Key Content" in b]
-        try:
-            print("{:<30}|  {:<}".format(i, results[0]))
-        except IndexError:
-            print("{:<30}|  {:<}".format(i, ""))
-    input("")
+        output, error = process.communicate()
+
+        if process.returncode == 0:
+            if "Windows Resource Protection did not find any integrity violations" in output:
+                return "No integrity violations were found."
+            elif "Windows Resource Protection found corrupt files and successfully repaired them" in output:
+                return "Corrupted files were found and repaired successfully."
+            elif "Windows Resource Protection found corrupt files but was unable to fix some of them" in output:
+                return "Some corrupted files were found but could not be repaired."
+        return "An unexpected error occurred during SFC scan."
+
+    except Exception as e:
+        return f"Error while running SFC: {e}"
 
 
-def scan(): #MODIFY
-    cmd1 = subprocess.Popen(
-        'cmd /k "sfc /scannow"',
-        shell=True,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-    )
-    out, err = cmd1.communicate()
-    string1 = out.decode("utf-8")
-    print(string1)
+def run_windows_defender():
+
+    try:
+        process = subprocess.Popen(
+            ['powershell', '-Command', 'Start-MpScan -ScanType QuickScan'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        output, error = process.communicate()
+
+        if process.returncode == 0:
+            return "Quick scan completed. Check Windows Defender logs for details."
+        else:
+            return "An error occurred during the virus scan. Please check Windows Defender."
+
+    except Exception as e:
+        return f"Error while running Windows Defender: {e}"
 
 
-def ping():
-    cmd = subprocess.Popen(
-        'cmd /k "ping www.google.com"',
-        shell=True,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-    )
-    out, err = cmd.communicate()
-    string = out.decode("utf-8")
-    print(string)
+def scan_system():
+
+    root = tk.Tk()
+    root.withdraw()  # Hide the main Tkinter window
+
+    # Run SFC scan
+    sfc_result = run_sfc()
+
+    # Run Windows Defender scan
+    defender_result = run_windows_defender()
+
+    # Display results in a message box
+    messagebox.showinfo("Scan Results", f"SFC Result:\n{sfc_result}\n\nWindows Defender Result:\n{defender_result}")
 
 
 def save_new_face():
@@ -1357,20 +1820,48 @@ def save_new_face():
 
     cv2.destroyAllWindows()
 
+def drone():
+    class DroneApp:
+        def __init__(self, root):
+            self.root = root
+            self.root.title("Drone Viewer")
+            self.root.geometry("400x200")
+            self.root.resizable(False, False)
 
-def open_drone():
-    URL = "http://192.168.1.6:8080/shot.jpg"
-    while True:
-        img_arr = np.array(
-            bytearray(urllib.request.urlopen(URL).read()), dtype=np.uint8
-        )
-        img = cv2.imdecode(img_arr, -1)
-        cv2.imshow("IPWebcam", img)
-        q = cv2.waitKey(1)
-        if q == ord("q"):
-            break
+            # IP Address Label and Entry
+            self.ip_label = tk.Label(root, text="Drone IP Address:", font=("Helvetica", 12))
+            self.ip_label.pack(pady=10)
+            self.ip_entry = tk.Entry(root, width=30, font=("Helvetica", 12))
+            self.ip_entry.pack(pady=5)
 
-    cv2.destroyAllWindows()
+            # Start Button
+            self.start_button = tk.Button(root, text="Start Drone Feed", command=self.open_drone, bg="green", fg="white", font=("Helvetica", 12))
+            self.start_button.pack(pady=20)
+
+        def open_drone(self):
+            ip_address = self.ip_entry.get().strip()
+            if not ip_address:
+                messagebox.showerror("Error", "Please enter a valid IP address.")
+                return
+
+            url = f"http://{ip_address}:8080/shot.jpg"
+            try:
+                while True:
+                    img_arr = np.array(bytearray(urllib.request.urlopen(url).read()), dtype=np.uint8)
+                    img = cv2.imdecode(img_arr, -1)
+                    cv2.imshow("Drone Feed", img)
+                    q = cv2.waitKey(1)
+                    if q == ord("q"):
+                        break
+
+                cv2.destroyAllWindows()
+            except Exception as e:
+                messagebox.showerror("Error", f"An error occurred: {e}")
+
+    # Launch the GUI
+    root = tk.Tk()
+    app = DroneApp(root)
+    root.mainloop()
 
 
 def takeCommand():
@@ -1395,48 +1886,197 @@ def takeCommand():
 
 
 def news():
-    googlenews = GoogleNews()
-    googlenews = GoogleNews("en", "d")
+    def fetch_news():
+        city = city_entry.get().strip()
+        if not city:
+            messagebox.showerror("Error", "Please enter a city name.")
+            return
 
-    city = input("city please: ")
-    googlenews.search(city)
-    googlenews.getpage(1)
+        googlenews = GoogleNews()
+        googlenews = GoogleNews("en", "d")
 
-    googlenews.result()
-    googlenews.gettext()
-    print(googlenews.result())
-    speak("would you like me to read the news please answer in yes or no only")
-    t = takeCommand()
-    if t == "yes":
-        speak("reading the news")
-        speak(googlenews.result())
-    else:
-        speak("ok")
+        googlenews.search(city)
+        googlenews.getpage(1)
+
+        global news_results
+        news_results = googlenews.result()
+
+        if news_results:
+            news_text = "\n".join([article['title'] for article in news_results])
+            news_display.config(state=tk.NORMAL)
+            news_display.delete(1.0, tk.END)
+            news_display.insert(tk.END, news_text)
+            news_display.config(state=tk.DISABLED)
+        else:
+            messagebox.showinfo("No Results", "No news articles found for this city.")
+
+    def read_news():
+        if not news_results:
+            messagebox.showinfo("No News", "No news to read. Please fetch news first.")
+            return
+
+        speak("Reading the news.")
+        for article in news_results:
+            speak(article['title'])
+
+    # GUI Setup
+    root = tk.Tk()
+    root.title("News Fetcher")
+    root.geometry("500x450")
+    root.resizable(False, False)
+
+    # City Input
+    city_label = tk.Label(root, text="Enter City:", font=("Helvetica", 12))
+    city_label.pack(pady=10)
+    city_entry = tk.Entry(root, width=40, font=("Helvetica", 12))
+    city_entry.pack(pady=5)
+
+    # Fetch Button
+    fetch_button = tk.Button(root, text="Fetch News", command=fetch_news, bg="blue", fg="white", font=("Helvetica", 12))
+    fetch_button.pack(pady=10)
+
+    # News Display
+    news_display = tk.Text(root, width=60, height=15, font=("Helvetica", 10), state=tk.DISABLED)
+    news_display.pack(pady=10)
+
+    # Read News Button
+    read_button = tk.Button(root, text="Read News", command=read_news, bg="green", fg="white", font=("Helvetica", 12))
+    read_button.pack(pady=10)
+
+    # Run the Application
+    root.mainloop()
+
 
 
 def pdf_reader():
-    path = input("tell me path ")
-    book = open(path, "rb")
-    pdfReader = PyPDF2.PdfFileReader(book)
-    pages = pdfReader.numPages
-    speaker = pyttsx3.init()
-    for num in range(1, pages):
-        page = pdfReader.getPage(num)
-        text = page.extractText()
-        speaker.say(text)
-        speaker.runAndWait()
+    class PDFReaderApp:
+        def __init__(self, root):
+            self.root = root
+            self.root.title("PDF Reader")
+            self.root.geometry("500x300")
+            self.root.resizable(False, False)
+
+            self.pdf_path = None
+            self.speaker = pyttsx3.init()
+            self.is_paused = False
+
+            # Title Label
+            self.title_label = tk.Label(root, text="PDF Reader", font=("Helvetica", 16, "bold"))
+            self.title_label.pack(pady=10)
+
+            # Select PDF Button
+            self.select_button = tk.Button(root, text="Select PDF", command=self.select_pdf, bg="blue", fg="white", font=("Helvetica", 12))
+            self.select_button.pack(pady=10)
+
+            # Start Reading Button
+            self.start_button = tk.Button(root, text="Start Reading", command=self.start_reading, bg="green", fg="white", font=("Helvetica", 12), state=tk.DISABLED)
+            self.start_button.pack(pady=10)
+
+            # Pause Reading Button
+            self.pause_button = tk.Button(root, text="Pause/Resume", command=self.toggle_pause, bg="orange", fg="white", font=("Helvetica", 12), state=tk.DISABLED)
+            self.pause_button.pack(pady=10)
+
+        def select_pdf(self):
+            self.pdf_path = filedialog.askopenfilename(filetypes=[("PDF Files", "*.pdf")])
+            if self.pdf_path:
+                messagebox.showinfo("PDF Selected", f"Selected PDF: {self.pdf_path}")
+                self.start_button.config(state=tk.NORMAL)
+                self.pause_button.config(state=tk.NORMAL)
+
+        def start_reading(self):
+            if not self.pdf_path:
+                messagebox.showerror("Error", "Please select a PDF first.")
+                return
+
+            try:
+                with open(self.pdf_path, "rb") as book:
+                    pdf_reader = PyPDF2.PdfFileReader(book)
+                    pages = pdf_reader.numPages
+
+                    for num in range(pages):
+                        if self.is_paused:
+                            self.speaker.stop()
+                            while self.is_paused:
+                                self.root.update()
+                        page = pdf_reader.getPage(num)
+                        text = page.extractText()
+                        self.speaker.say(text)
+                        self.speaker.runAndWait()
+
+            except Exception as e:
+                messagebox.showerror("Error", f"An error occurred: {e}")
+
+        def toggle_pause(self):
+            self.is_paused = not self.is_paused
+            if self.is_paused:
+                self.speaker.pause()
+                messagebox.showinfo("Paused", "Reading paused. Click again to resume.")
+            else:
+                self.speaker.resume()
+                messagebox.showinfo("Resumed", "Reading resumed.")
+
+    # Run the Application
+    root = tk.Tk()
+    app = PDFReaderApp(root)
+    root.mainloop()
 
 
-def sendEmail(to, content):
-    server = smtplib.SMTP("smtp.gmail.com", 587)
-    server.ehlo()
-    server.starttls()
 
-    # Enable low security in gmail
-    server.login("karenfromothman@gmail.com", "transformer5")
-    server.sendmail("karenfromothman@gmail.com", to, content)
-    server.close()
+def send_email(sender_email, sender_password, recipient_email, subject, message):
+    try:
+        # Set up the server
+        smtp_server = "smtp.gmail.com"
+        smtp_port = 587
+        server = smtplib.SMTP(smtp_server, smtp_port)
+        server.starttls()  # Secure the connection
+        
+        # Log in to the email account
+        server.login(sender_email, sender_password)
+        
+        # Create the email
+        email = MIMEMultipart()
+        email['From'] = sender_email
+        email['To'] = recipient_email
+        email['Subject'] = subject
+        email.attach(MIMEText(message, 'plain'))
+        
+        # Send the email
+        server.send_message(email)
+        print("Email sent successfully!")
     
+    except Exception as e:
+        print(f"Failed to send email: {e}")
+    
+    finally:
+        server.quit()
+ 
+def gui_send_email():
+    def send():
+        sender = "othman.mohamed.1142005@gmail.com"
+        password = "gkve qhih vwcm nsvv"  # App Password
+        recipient = recipient_entry.get().strip()
+        subject = ""  # Empty subject
+        message = "This is a test email sent from Python."
+
+        if not recipient:
+            messagebox.showwarning("Input Error", "Recipient email is required.")
+            return
+
+        send_email(sender, password, recipient, subject, message)
+
+    # GUI Setup
+    root = tk.Tk()
+    root.title("Send Email")
+    root.geometry("400x200")
+
+    tk.Label(root, text="Recipient Email:", font=("Helvetica", 12)).pack(pady=5)
+    recipient_entry = tk.Entry(root, font=("Helvetica", 12), width=40)
+    recipient_entry.pack(pady=5)
+
+    send_button = tk.Button(root, text="Send Email", command=send, bg="green", fg="white", font=("Helvetica", 12))
+    send_button.pack(pady=10)
+
+    root.mainloop()
     
 def get_username():
     # For Windows systems
@@ -1474,11 +2114,13 @@ if __name__ == "__main__":
     print(figlet_format("OTHMAN TECH", font = "big" ) )
     try:
         signin_signup()
-        if access == True:
-            wishMe()
-            speak("Welcome Mister" + uname)
-            speak("How can i Help you, Sir")
-
+    except Exception as e:
+        speak("There is error try again please")
+        messagebox.showerror("There is unkwon error try again please",f"Cannot start the program {e}")
+    if access == True:
+        wishMe()
+        speak("Welcome Mister" + uname)
+        speak("How can i Help you, Sir")
         while True:
             checkalarm()
             query = takeCommand().lower()
@@ -1562,13 +2204,11 @@ if __name__ == "__main__":
                     speak("i am sorry to hear this")
 
             elif "how old are you" in query:
-                todays_date = date.today()
-                today_year = todays_date.year
-                age = today_year - rdate
-                if age <= -1:
-                    age = "did not released yet"
-
-                speak(age)
+                
+                start_date = date(2024,12,26)  
+                today = date.today()
+                delta = today - start_date
+                speak(f"It has been {delta} days Since i have first run it means i have {delta/356} years")
 
             elif (
                 "what's your name" in query
@@ -1813,13 +2453,14 @@ if __name__ == "__main__":
 
             elif "change background" in query:
                 ctypes.windll.user32.SystemParametersInfoW(
-                    20, 0, r"C:\Users\ET\OneDrive\Pictures\Saved Pictures\Iron Man", 0
+                    20, 0, r"C:\Users\grand\OneDrive\Pictures\Saved Pictures\Iron Man", 0
                 )
                 speak("Background changed succesfully")
 
             elif "scan now" in query:
                 speak("right now")
-                print(scan())
+                scan_system()
+                
             # GOOGLE APPS CONTROLLER
             elif "open google" in query:
                 speak("Here you go to Google")
@@ -1870,15 +2511,15 @@ if __name__ == "__main__":
                 webbrowser.open("google earth.com")
 
             elif "open find my device" in query:
-                speak("Here you go to google find my device\n")
+                speak("Here you go to google find my device")
                 webbrowser.open("https://www.google.com/android/find")
 
             elif "open google keep" in query:
-                speak("Here you go to google keep\n")
+                speak("Here you go to google keep")
                 webbrowser.open("google keep.com")
 
             elif "open google one" in query:
-                speak("Here you go to google one\n")
+                speak("Here you go to google one")
                 webbrowser.open("google one.com")
 
             elif "open google ads" in query:
@@ -1886,7 +2527,7 @@ if __name__ == "__main__":
                 webbrowser.open("google ads.com")
 
             elif "open google docs" in query:
-                speak("Here you go to google docs\n")
+                speak("Here you go to google docs")
                 webbrowser.open("google docs.com")
 
             elif "saved passwords" in query:
@@ -1906,23 +2547,23 @@ if __name__ == "__main__":
                 webbrowser.open("wikipedia.com")
 
             elif "open facebook" in query:
-                speak("Here you go to facebook\n")
+                speak("Here you go to facebook")
                 webbrowser.open("facebook.com")
 
             elif "open instgram" in query:
-                speak("Here you go to insta\n")
+                speak("Here you go to insta")
                 webbrowser.open("instgram.com")
 
             elif "open messenger" in query:
-                speak("Here you go to messenger\n")
+                speak("Here you go to messenger")
                 webbrowser.open("messenger.com")
 
             elif "open whatsapp" in query:
-                speak("Here you go to whatsapp\n")
+                speak("Here you go to whatsapp")
                 webbrowser.open("https://web.whatsapp.com")
 
             elif "open arduino web" in query:
-                speak("Here you go to arduino\n")
+                speak("Here you go to arduino")
                 webbrowser.open("arduino web editor.com")
 
             elif "open stackoverflow" in query:
@@ -1930,7 +2571,7 @@ if __name__ == "__main__":
                 webbrowser.open("stackoverflow.com")
 
             elif "open egybest" in query or "download movies" in query:
-                speak("Here you go to egybest\n")
+                speak("Here you go to egybest")
                 webbrowser.open("egybest.com")
 
             elif "show contacts" in query:
@@ -2012,27 +2653,18 @@ if __name__ == "__main__":
                     print("An Unexpected Error!")
 
             elif "email to developer" in query:
-                try:
-                    speak("What should I say?")
-                    content = takeCommand()
-                    to = "grandtheifer5@gmail.com"
-                    sendEmail(to, content)
-                    speak("Email has been sent !")
-                except Exception as e:
-                    print(e)
-                    speak("I am not able to send this email")
+                sender = "othman.mohamed.1142005@gmail.com"
+                password = "gkve qhih vwcm nsvv"  # Replace with your email password
+                recipient = "graandtheifer5@gmail.com"
+                speak("What do you want to send about")
+                subject = takeCommand()
+                speak("What do you want to say about")
+                message = takeCommand()
+                message = "This is a test email sent from Python."
+                send_email(sender, password, recipient, subject, message)
 
             elif "send an email" in query:
-                try:
-                    speak("What should I say?")
-                    content = takeCommand()
-                    speak("whome should i send")
-                    to = input("to ")
-                    sendEmail(to, content)
-                    speak("Email has been sent !")
-                except Exception as e:
-                    print(e)
-                    speak("I am not able to send this email")
+                gui_send_email()
             # APPS
             elif "open app" in query:  #
                 speak("Can you give the app name to me ")
@@ -2114,9 +2746,6 @@ if __name__ == "__main__":
 
             elif "weather" in query:
                 temperature()
-
-            elif "show Bing" in query:
-                ping()
 
             elif "don't listen" in query or "stop listening" in query:
                 speak("for how much time you want to stop Friday from listening commands")
@@ -2204,7 +2833,7 @@ if __name__ == "__main__":
 
             elif "open drone" in query:  # donnot know
                 try:
-                    open_drone()
+                    drone()
                 except:
                     pass
 
@@ -2216,7 +2845,7 @@ if __name__ == "__main__":
 
             elif "test my network speed" in query:
                 s = speedtest.Speedtest()
-                speak("what do you want to know ([1]upload\n[2]download\n[3]ping)")
+                speak("what do you want to know ([1]upload[2]download\n[3]ping)")
                 speak("what is the number of the option you want in numbers only")
                 option = int(takeCommand())
                 if option == 1:
@@ -2290,5 +2919,3 @@ if __name__ == "__main__":
                 print(joke)
                 speak(joke)
 
-    except:
-        speak("There is unkwon error try again please")
