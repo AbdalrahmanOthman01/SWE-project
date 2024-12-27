@@ -69,7 +69,7 @@ except Exception as e:
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 current_time = datetime.datetime.now()
-assname = "EVA"
+assname = "Friday"
 
 #########################################################database################################################
 # Connect to the database
@@ -2412,9 +2412,112 @@ if __name__ == "__main__":
                 pyautogui.press("z")
                 pyautogui.keyUp("ctrl")
 
+            elif "redo" in query:
+                pyautogui.keyDown("ctrl")
+                pyautogui.press("y")
+                pyautogui.keyUp("ctrl")
+
             elif "cut" in query:
                 pyautogui.keyDown("ctrl")
                 pyautogui.press("x")
+                pyautogui.keyUp("ctrl")
+
+            elif "open" in query:
+                pyautogui.keyDown("ctrl")
+                pyautogui.press("o")
+                pyautogui.keyUp("ctrl")
+
+            elif "refresh" in query:
+                pyautogui.keyDown("ctrl")
+                pyautogui.press("r")
+                pyautogui.keyUp("ctrl")
+
+            elif "fullscreen" in query:
+                pyautogui.keyDown("f11")
+                pyautogui.keyUp("f11")
+
+            elif "new" in query:
+                pyautogui.keyDown("ctrl")
+                pyautogui.press("n")
+                pyautogui.keyUp("ctrl")
+
+            elif "open task manager" in query:
+                pyautogui.keyDown("ctrl")
+                pyautogui.keyDown("shift")
+                pyautogui.press("esc")
+                pyautogui.keyUp("shift")
+                pyautogui.keyUp("ctrl")
+
+            elif "toggle desktop" in query:
+                pyautogui.keyDown("win")
+                pyautogui.press("d")
+                pyautogui.keyUp("win")
+                
+            elif "rename" in query:
+                pyautogui.press("f2")
+                
+            elif "delete" in query:
+                pyautogui.press("delete")
+                
+            elif "properties" in query:
+                pyautogui.hotkey("alt", "enter")
+               
+            elif "magnifier" in query:
+                pyautogui.hotkey("win", "+")
+                 
+            elif "narrator" in query:
+                pyautogui.hotkey("win", "ctrl", "enter")
+                
+            elif "ease of access" in query:
+                pyautogui.hotkey("win", "u")
+               
+            elif "new tab" in query:
+                pyautogui.hotkey("ctrl", "shift", "t")
+                 
+            elif "close tab" in query:
+                pyautogui.hotkey("ctrl", "w")
+                
+            elif "reopen tab" in query:
+                pyautogui.hotkey("ctrl", "shift", "t")
+
+            elif "minimize all windows" in query:
+                pyautogui.keyDown("ctrl")
+                pyautogui.keyDown("shift")
+                pyautogui.press("esc")
+                pyautogui.keyUp("shift")
+                pyautogui.keyUp("ctrl")
+
+            elif "create virtual desktop" in query:
+                pyautogui.keyDown("ctrl")
+                pyautogui.keyDown("win")
+                pyautogui.press("d")
+                pyautogui.keyUp("win")
+                pyautogui.keyUp("ctrl")
+
+            elif "close virtual desktop" in query:
+                pyautogui.keyDown("ctrl")
+                pyautogui.keyDown("win")
+                pyautogui.press("f4")
+                pyautogui.keyUp("win")
+                pyautogui.keyUp("ctrl")
+
+            elif "next desktop" in query:
+                pyautogui.keyDown("ctrl")
+                pyautogui.keyDown("win")
+                pyautogui.press("right")
+                pyautogui.keyUp("win")
+                pyautogui.keyUp("ctrl")
+
+            elif "previous desktop" in query:
+                pyautogui.keyDown("ctrl")
+                pyautogui.keyDown("win")
+                pyautogui.press("left")
+                pyautogui.keyUp("win")
+                pyautogui.keyUp("ctrl")
+
+            elif "find" in query:
+                pyautogui.keyDown("ctrl")
+                pyautogui.press("f")
                 pyautogui.keyUp("ctrl")
 
             elif "save" in query:
@@ -2437,9 +2540,13 @@ if __name__ == "__main__":
             elif "close the window" in query or "close" in query or "close it" in query:
                 pyautogui.keyDown("alt")
                 pyautogui.press("F4")
-                time.sleep(1)
                 pyautogui.keyUp("alt")
-                speak("done")
+
+            elif "lock screen" in query or "close" in query or "close it" in query:
+                pyautogui.keyDown("win")
+                pyautogui.press("l")
+                pyautogui.keyUp("win")
+
 
             elif "how much power do we have" in query:
                 battery = psutil.sensors_battery()
