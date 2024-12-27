@@ -53,11 +53,13 @@ from pynput.mouse import Button, Controller
 import pyaudio
 import wave
 import threading
+from googlesearch import search
 try:
     import requests
     import wikipedia
     import speedtest
     import pywhatkit
+    from bs4 import BeautifulSoup
     from pytube import YouTube
     import speech_recognition as sr
     from GoogleNews import GoogleNews
@@ -70,6 +72,44 @@ except Exception as e:
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 current_time = datetime.datetime.now()
 assname = "Friday"
+
+class GoogleSearchBot:
+
+    def perform_search(self, query):
+
+        try:
+            results = [url for url in search(query, num_results=1, lang="en")]
+            if results:
+                return results[0] 
+            else:
+                return None
+        except Exception as e:
+            messagebox.showerror("Error",f"Error during search: {e}")
+            return None
+
+    def fetch_content(self, url):
+
+        try:
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.text, "html.parser")
+            for script_or_style in soup(["script", "style"]):
+                script_or_style.decompose()
+            text = soup.get_text()
+            lines = [line.strip() for line in text.splitlines()]
+            content = "\n".join(line for line in lines if line)
+            return content[:1000]  # Return the first 1000 characters
+        except Exception as e:
+            messagebox.showerror("Error",f"Could not fetch content: {e}")
+
+    def run(self):
+        # Perform search
+        first_result_url = self.perform_search(query)
+        if first_result_url:
+            content = self.fetch_content(first_result_url)
+            print(content)
+        else:
+            messagebox.showerror("Error","No results found. Please try a different query.")
 
 #########################################################database################################################
 # Connect to the database
@@ -3026,3 +3066,5 @@ if __name__ == "__main__":
                 print(joke)
                 speak(joke)
 
+            else:
+                GoogleSearchBot().run()
