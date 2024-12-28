@@ -1,5 +1,5 @@
-# Coded by     : Eng.Abdalrahman Hossam Othman
-# Project name : F.R.I.D.A.Y-AI
+# Coded by     : SWE-team
+# Project name : Eva-AI
 # Starting Date: 2024.8.30
 # End Date     : 2024.9.30
 import os
