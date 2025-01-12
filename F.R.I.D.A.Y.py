@@ -2092,8 +2092,8 @@ def send_email(sender_email, sender_password, recipient_email, subject, message)
  
 def gui_send_email():
     def send():
-        sender = "othman.mohamed.1142005@gmail.com"
-        password = "gkve qhih vwcm nsvv"  # App Password
+        sender = ""
+        password = ""  # App Password
         recipient = recipient_entry.get().strip()
         subject = ""  # Empty subject
         message = "This is a test email sent from Python."
