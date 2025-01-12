@@ -36,11 +36,11 @@ E.V.A-AI (Framework for Real-time Intelligent Digital Assistance by You) is an a
 ## Installation
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/FRIDAY-AI.git
+   [git clone https://github.com/yourusername/FRIDAY-AI.git](https://github.com/AbdalrahmanOthman01/SWE-project.git)
    ```
 2. Navigate to the project directory:
    ```bash
-   cd FRIDAY-AI
+   cd SWE-project
    ```
 3. Install required dependencies:
    ```bash
@@ -48,7 +48,7 @@ E.V.A-AI (Framework for Real-time Intelligent Digital Assistance by You) is an a
    ```
 4. Run the main Python script:
    ```bash
-   python main.py
+   python EVA.py
    ```
 
 ## Usage
