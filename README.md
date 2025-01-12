@@ -36,7 +36,7 @@ E.V.A-AI (Framework for Real-time Intelligent Digital Assistance by You) is an a
 ## Installation
 1. Clone the repository:
    ```bash
-   [git clone https://github.com/yourusername/FRIDAY-AI.git](https://github.com/AbdalrahmanOthman01/SWE-project.git)
+   [git clone https://github.com/AbdalrahmanOthman01/SWE-project.git]
    ```
 2. Navigate to the project directory:
    ```bash
