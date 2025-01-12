@@ -1,7 +1,7 @@
-# F.R.I.D.A.Y-AI
+# E.V.A-AI
 
 ## Project Overview
-F.R.I.D.A.Y-AI (Framework for Real-time Intelligent Digital Assistance by You) is an advanced Python-based virtual assistant designed to perform a wide range of tasks. With capabilities spanning from scientific problem-solving to IoT control, it provides an all-in-one solution for personal productivity, smart home control, and multimedia management.
+E.V.A-AI (Framework for Real-time Intelligent Digital Assistance by You) is an advanced Python-based virtual assistant designed to perform a wide range of tasks. With capabilities spanning from scientific problem-solving to IoT control, it provides an all-in-one solution for personal productivity, smart home control, and multimedia management.
 
 ## Features
 
