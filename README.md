@@ -62,9 +62,9 @@ Contributions are welcome! Feel free to open an issue or submit a pull request.
 This project is licensed under the MIT License.
 
 ## Contact
-For any inquiries or support, please contact [your email here].
+For any inquiries or support, please contact eva@gmail.com.
 
 ---
-Enjoy using F.R.I.D.A.Y-AI, your personal Python-based virtual assistant!
+Enjoy using EVAF.R.I.D.A.Y-AI, your personal Python-based virtual assistant!
 
 
